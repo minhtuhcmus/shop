@@ -42,7 +42,7 @@ export class User extends Entity {
   @property({
     type: 'string',
   })
-  password: string;
+  hash_password: string;
 
   @property.array(String)
   permissions: PermissionKey[];

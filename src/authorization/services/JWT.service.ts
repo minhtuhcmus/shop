@@ -63,7 +63,7 @@ export class JWTService implements TokenService {
       );
     }
 
-    if (credential.password != foundUser.password) {
+    if (credential.password != foundUser.hash_password) {
       throw new HttpErrors.Unauthorized('The credentials are not correct.');
     }
     const currentUser: MyUserProfile = _.pick(toJSON(foundUser), [
