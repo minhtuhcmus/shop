@@ -20,7 +20,7 @@ import {
 import {User} from '../models';
 import {UserRepository} from '../repositories';
 //add
-import {inject, Getter} from '@loopback/core';
+import {inject, Getter, Setter} from '@loopback/core';
 import {HttpErrors} from '@loopback/rest';
 import {
   MyUserProfile,
@@ -37,6 +37,8 @@ import {
   TokenService,
   AuthenticationBindings,
 } from '@loopback/authentication';
+import {genSalt, hash} from 'bcryptjs';
+import VARIABLE from '../var';
 
 export class UserController {
   constructor(
@@ -45,7 +47,9 @@ export class UserController {
     @inject(MyAuthBindings.TOKEN_SERVICE)
     public jwtService: JWTService,
     @inject.getter(AuthenticationBindings.CURRENT_USER)
-    public getCurrentUser: Getter<MyUserProfile>,
+    public getCurrentUser: Getter<MyUserProfile | User>,
+    @inject.setter(AuthenticationBindings.CURRENT_USER)
+    public setCurrentUser: Setter<MyUserProfile | User>,
   ) {}
 
   @post('/user', {
@@ -72,10 +76,13 @@ export class UserController {
         email: user.email,
       },
     });
-    console.log('create user', foundUser.length);
     if (foundUser.length != 0) {
       throw new HttpErrors.BadRequest(`This email already exists`);
     } else {
+      //hash password
+      const salt = await genSalt(VARIABLE.ROUNDS);
+      user.password = await hash(user.password, salt);
+
       const savedCharacter = await this.userRepository.create(user);
       delete savedCharacter.password;
       return savedCharacter;
@@ -90,6 +97,7 @@ export class UserController {
       },
     },
   })
+  @authenticate('jwt', {required: [PermissionKey.ViewAnyUser]})
   async count(
     @param.query.object('where', getWhereSchemaFor(User)) where?: Where<User>,
   ): Promise<Count> {
@@ -108,6 +116,7 @@ export class UserController {
       },
     },
   })
+  @authenticate('jwt', {required: [PermissionKey.ViewAnyUser]})
   async find(
     @param.query.object('filter', getFilterSchemaFor(User))
     filter?: Filter<User>,
@@ -145,7 +154,7 @@ export class UserController {
       },
     },
   })
-  async findById(@param.path.number('id') id: number): Promise<User> {
+  async findById(@param.path.number('id') id: string): Promise<User> {
     return this.userRepository.findById(id);
   }
 
@@ -157,7 +166,7 @@ export class UserController {
     },
   })
   async updateById(
-    @param.path.number('id') id: number,
+    @param.path.number('id') id: string,
     @requestBody({
       content: {
         'application/json': {
@@ -178,7 +187,7 @@ export class UserController {
     },
   })
   async replaceById(
-    @param.path.number('id') id: number,
+    @param.path.number('id') id: string,
     @requestBody() user: User,
   ): Promise<void> {
     await this.userRepository.replaceById(id, user);
@@ -191,7 +200,7 @@ export class UserController {
       },
     },
   })
-  async deleteById(@param.path.number('id') id: number): Promise<void> {
+  async deleteById(@param.path.number('id') id: string): Promise<void> {
     await this.userRepository.deleteById(id);
   }
 
@@ -211,7 +220,7 @@ export class UserController {
     return {token};
   }
 
-  @get('/characters/me', {
+  @get('/user/me', {
     responses: {
       '200': {
         description: 'The current user profile',
@@ -224,7 +233,36 @@ export class UserController {
     },
   })
   @authenticate('jwt', {required: [PermissionKey.ViewOwnUser]})
-  async printCurrentUser(): Promise<MyUserProfile> {
+  async printCurrentUser(): Promise<MyUserProfile | User> {
     return await this.getCurrentUser();
+  }
+
+  @patch('/user/me', {
+    responses: {
+      '204': {
+        description: 'User PATCH success',
+      },
+    },
+  })
+  @authenticate('jwt', {required: [PermissionKey.UpdateOwnUser]})
+  async updateCurrentUser(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(User, {partial: true}),
+        },
+      },
+    })
+    user: User,
+  ): Promise<User> {
+    const currUser = await this.getCurrentUser();
+    console.log('currUser', currUser);
+    const res = await this.userRepository.updateById(currUser.id, user);
+    console.log('res', res);
+    const updatedUser = await this.userRepository.findById(currUser.id);
+    console.log('updatedUser', updatedUser);
+    const resUpdate = await this.setCurrentUser(updatedUser);
+    console.log('resUpdate', resUpdate);
+    return updatedUser;
   }
 }

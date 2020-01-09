@@ -2,17 +2,28 @@ import {Entity, model, property} from '@loopback/repository';
 import {PermissionKey} from '../authorization';
 @model()
 export class User extends Entity {
+  static findOrCreate(
+    arg0: {facebookId: any},
+    arg1: (err: any, user: any) => any,
+  ) {
+    throw new Error('Method not implemented.');
+  }
   @property({
-    type: 'number',
+    type: 'string',
     id: true,
     generated: true,
   })
-  id?: number;
+  id?: string;
 
   @property({
     type: 'string',
   })
-  email?: string | number;
+  email?: string;
+
+  @property({
+    type: 'string',
+  })
+  role: string;
 
   @property({
     type: 'string',
@@ -35,14 +46,14 @@ export class User extends Entity {
   fullName?: string;
 
   @property({
-    type: 'string',
+    type: 'object',
   })
-  address?: string;
+  address?: object;
 
   @property({
     type: 'string',
   })
-  hash_password: string;
+  password: string;
 
   @property.array(String)
   permissions: PermissionKey[];
