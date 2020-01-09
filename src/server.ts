@@ -39,7 +39,8 @@ export class ExpressServer {
           clientID: VARIABLE.FACEBOOK_APP_ID,
           clientSecret: VARIABLE.FACEBOOK_APP_SECRET,
           callbackURL: VARIABLE.FACEBOOK_CALLBACK,
-          profileFields: ['id', 'displayName', 'photos', 'email']
+          enableProof: true,
+          profileFields: ['id', 'displayName', 'photos', 'email'],
         },
         function(
           accessToken: any,
@@ -58,7 +59,10 @@ export class ExpressServer {
     );
 
     //authenticate
-    this.app.get('/auth/facebook', passport.authenticate('facebook', {scope: ['email']}));
+    this.app.get(
+      '/auth/facebook',
+      passport.authenticate('facebook', {scope: ['email']}),
+    );
 
     this.app.get(
       '/auth/facebook/callback',
