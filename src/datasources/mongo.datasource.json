@@ -1,11 +1,11 @@
 {
   "name": "mongo",
   "connector": "mongodb",
-  "url": "",
+  "url": "mongodb://minhtu:minhtu123@ds227674.mlab.com:27674/nhabanhoa",
   "host": "localhost",
-  "port": 27017,
-  "user": "",
+  "port": 27674,
+  "user": "minhtu",
   "password": "minhtu123",
-  "database": "shop",
+  "database": "nhabanhoa",
   "useNewUrlParser": true
 }
