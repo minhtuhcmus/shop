@@ -81,11 +81,11 @@ export class UserController {
     } else {
       //hash password
       const salt = await genSalt(VARIABLE.ROUNDS);
-      user.password = await hash(user.password, salt);
+      // user.password = await hash(user.password, salt);
 
-      const savedCharacter = await this.userRepository.create(user);
-      delete savedCharacter.password;
-      return savedCharacter;
+      const savedAdmin = await this.userRepository.create(user);
+      delete savedAdmin.password;
+      return savedAdmin;
     }
   }
 
