@@ -76,7 +76,7 @@ export class AdminController {
     } else {
       //hash password
       const salt = await genSalt(VARIABLE.ROUNDS);
-      user.password = await hash(user.password, salt);
+      // user.password = await hash(user.password, salt);
 
       const savedUser = await this.userRepository.create(user);
       delete savedUser.password;
