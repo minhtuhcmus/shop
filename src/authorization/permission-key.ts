@@ -15,4 +15,13 @@ export const enum PermissionKey {
   ViewAnyUser = 'ViewAnyUser',
   // For deleting a user
   DeleteAnyUser = 'DeleteAnyUser',
+
+  // For creating a permission
+  CreatePermission = 'CreatePermission',
+  // For access any permission
+  ViewPermission = 'ViewPermission',
+  // For delete a permission
+  DeletePermission = 'DeletePermission',
+  // For change a permission
+  UpdatePermission = 'UpdatePermission',
 }

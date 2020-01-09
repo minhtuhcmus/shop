@@ -5,7 +5,10 @@ import http from 'http';
 import path = require('path');
 import pEvent from 'p-event';
 import {ShopApplication} from './application';
-
+import passport = require('passport');
+import VARIABLE from './var';
+import {User} from './models';
+var FacebookStrategy = require('passport-facebook');
 export class ExpressServer {
   private app: express.Application;
   private lbApp: ShopApplication;
@@ -26,6 +29,49 @@ export class ExpressServer {
     });
 
     this.app.use(express.static(path.join(__dirname, '../public')));
+
+    //declare stragtegy
+
+    //Facebook
+    passport.use(
+      new FacebookStrategy(
+        {
+          clientID: VARIABLE.FACEBOOK_APP_ID,
+          clientSecret: VARIABLE.FACEBOOK_APP_SECRET,
+          callbackURL: VARIABLE.FACEBOOK_CALLBACK,
+          enableProof: true,
+          profileFields: ['id', 'displayName', 'photos', 'email'],
+        },
+        function(
+          accessToken: any,
+          refreshToken: any,
+          profile: {id: any},
+          cb: (arg0: any, arg1: any) => any,
+        ) {
+          console.log('accessToken refreshToken profile', accessToken);
+          console.log('refreshToken', refreshToken);
+          console.log('profile', profile);
+          User.findOrCreate({facebookId: profile.id}, function(err, user) {
+            return cb(err, user);
+          });
+        },
+      ),
+    );
+
+    //authenticate
+    this.app.get(
+      '/auth/facebook',
+      passport.authenticate('facebook', {scope: ['email']}),
+    );
+
+    this.app.get(
+      '/auth/facebook/callback',
+      passport.authenticate('facebook', {failureRedirect: '/login'}),
+      function(req, res) {
+        // Successful authentication, redirect home.
+        res.redirect('/');
+      },
+    );
   }
 
   async boot() {

@@ -8,6 +8,7 @@ import {repository} from '@loopback/repository';
 import {UserRepository} from '../../repositories';
 import * as _ from 'lodash';
 import {toJSON} from '@loopback/testlab';
+import {compare} from 'bcryptjs';
 
 const jwt = require('jsonwebtoken');
 const signAsync = promisify(jwt.sign);
@@ -33,7 +34,7 @@ export class JWTService implements TokenService {
     let userProfile = _.pick(decryptedToken, [
       'id',
       'email',
-      'name',
+      'fullName',
       `permissions`,
     ]);
     return userProfile;
@@ -47,7 +48,6 @@ export class JWTService implements TokenService {
         expiresIn: TokenServiceConstants.TOKEN_EXPIRES_IN_VALUE,
       },
     );
-
     return token;
   }
 
@@ -55,7 +55,6 @@ export class JWTService implements TokenService {
     const foundUser = await this.userRepository.findOne({
       where: {email: credential.email},
     });
-    console.log('get token', foundUser);
 
     if (!foundUser) {
       throw new HttpErrors['NotFound'](
@@ -63,12 +62,18 @@ export class JWTService implements TokenService {
       );
     }
 
-    if (credential.password != foundUser.hash_password) {
+    const passwordMatched = await compare(
+      credential.password,
+      foundUser.password,
+    );
+
+    if (!passwordMatched) {
       throw new HttpErrors.Unauthorized('The credentials are not correct.');
     }
     const currentUser: MyUserProfile = _.pick(toJSON(foundUser), [
+      'id',
       'email',
-      'name',
+      'fullName',
       'permissions',
     ]) as MyUserProfile;
     const token = await this.generateToken(currentUser);

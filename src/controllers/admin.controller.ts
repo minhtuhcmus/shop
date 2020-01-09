@@ -20,8 +20,17 @@ import {inject} from '@loopback/core';
 import {User} from '../models';
 import {UserRepository} from '../repositories';
 import {HttpErrors} from '@loopback/rest';
-import {PermissionKey} from '../authorization';
+import {
+  PermissionKey,
+  StaffProfileSchema,
+  StaffRequestBody,
+  UserProfileSchema,
+  UserRequestBody,
+} from '../authorization';
 import {authenticate} from '@loopback/authentication';
+import {genSalt, hash} from 'bcryptjs';
+import {compare} from 'bcryptjs';
+import VARIABLE from '../var';
 
 export class AdminController {
   constructor(
@@ -39,7 +48,7 @@ export class AdminController {
   })
   async create(
     @param.query.string('admin_code') admin_code: string,
-    @requestBody() user: User,
+    @requestBody(UserRequestBody) user: User,
   ): Promise<User> {
     if (admin_code != '901029') {
       throw new HttpErrors.Forbidden('WRONG_ADMIN_CODE');
@@ -53,15 +62,22 @@ export class AdminController {
       PermissionKey.UpdateAnyUser,
       PermissionKey.ViewAnyUser,
       PermissionKey.DeleteAnyUser,
+      PermissionKey.CreatePermission,
+      PermissionKey.UpdatePermission,
+      PermissionKey.ViewPermission,
+      PermissionKey.DeletePermission,
     ];
     let foundUser = await this.userRepository.find({
       where: {email: user.email},
     });
-    console.log('create admin', foundUser);
 
     if (foundUser) {
       throw new HttpErrors.BadRequest(`This email already exists`);
     } else {
+      //hash password
+      const salt = await genSalt(VARIABLE.ROUNDS);
+      user.password = await hash(user.password, salt);
+
       const savedUser = await this.userRepository.create(user);
       delete savedUser.password;
       return savedUser;
@@ -146,9 +162,8 @@ export class AdminController {
     },
   })
   @authenticate('jwt', {required: [PermissionKey.ViewAnyUser]})
-  async findById(@param.path.string('id') id: number): Promise<User> {
+  async findById(@param.path.string('id') id: string): Promise<User> {
     let foundUser = await this.userRepository.findById(id);
-    console.log('foundUser', foundUser);
     return foundUser;
   }
 
@@ -167,7 +182,7 @@ export class AdminController {
     required: [PermissionKey.ViewAnyUser, PermissionKey.UpdateAnyUser],
   })
   async updateById(
-    @param.query.string('id') id: number,
+    @param.query.string('id') id: string,
     @requestBody() user: User,
   ): Promise<void> {
     await this.userRepository.updateById(id, user);
@@ -186,7 +201,7 @@ export class AdminController {
   @authenticate('jwt', {
     required: [PermissionKey.ViewAnyUser, PermissionKey.DeleteAnyUser],
   })
-  async deleteById(@param.path.string('id') id: number): Promise<void> {
+  async deleteById(@param.path.string('id') id: string): Promise<void> {
     ///
     await this.userRepository.deleteById(id);
   }
