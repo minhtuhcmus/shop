@@ -27,7 +27,7 @@
     "test:dev": "lb-mocha --allow-console-logs dist/__tests__/**/*.js && npm run posttest",
     "migrate": "node ./dist/migrate",
     "prestart": "npm run build",
-    "start": "node -r source-map-support/register .",
+    "start": "nodemon index.js",
     "dev": "nodemon index.js",
     "prepublishOnly": "npm run test",
     "start:watch": "tsc-watch -b --onSuccess \"node .\""
